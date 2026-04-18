@@ -36,7 +36,7 @@ body {
   gap: 8px;
   padding: 15px;
   margin: 15px;
-  box-shadow: 0 10px 20px rgba(0,0,0,0.5);
+  box-shadow: 0 10px 25px rgba(0,0,0,0.6);
 }
 
 .dot {
@@ -114,6 +114,7 @@ let tries=0;
 
 let rules=JSON.parse(localStorage.getItem("rules")||"{}");
 
+// 🎲 affichage
 function draw(el,val){
   const p={1:[4],2:[0,8],3:[0,4,8],4:[0,2,6,8],5:[0,2,4,6,8],6:[0,2,3,5,6,8]};
   el.innerHTML="";
@@ -132,7 +133,7 @@ function update(){
 }
 
 function vibrate(){
-  if(navigator.vibrate) navigator.vibrate(100);
+  if(navigator.vibrate) navigator.vibrate(80);
 }
 
 function animate(){
@@ -149,7 +150,7 @@ function rollDice(){
   vibrate();
   animate();
 
-  // 🎯 KINITO MODE
+  // 🎯 KINITO
   if(kinito){
     tries++;
 
@@ -180,14 +181,14 @@ function rollDice(){
 
   let text="", relance=false;
 
-  // CATIN
+  // 😈 CATIN (corrigé)
   if(result==="41"||reversed==="41"){
     catin=true;
-    text="😈 CATIN → tu bois à chaque lancer";
+    text="😈 CATIN → tu bois maintenant + tu peux relancer";
     relance=true;
   }
 
-  // DOUBLE 6
+  // 🔥 DOUBLE 6
   else if(d1v===6&&d2v===6){
     let r=prompt("Écris ta règle 😈");
     if(r){
@@ -197,7 +198,7 @@ function rollDice(){
     }
   }
 
-  // DOUBLES
+  // 🔥 DOUBLES
   else if(d1v===d2v){
     if(d1v===3) text="🔥 Double 3 → donne la noisette";
     else{
@@ -206,42 +207,40 @@ function rollDice(){
     }
   }
 
-  // règles
-  else if(result==="21"){ text="⬅️ avant boit"; relance=true; }
-  else if(result==="61"){ text="➡️ après boit"; relance=true; }
+  // 🎯 règles
+  else if(result==="21"){ text="⬅️ joueur avant boit"; relance=true; }
+  else if(result==="61"){ text="➡️ joueur après boit"; relance=true; }
   else if(result==="51"){ text="👃 dernier nez boit"; relance=true; }
 
   else if(result==="65"||reversed==="65"){
     kinito=true;
     tries=0;
     locked=[false,false];
-    text="🎯 KINITO MODE ACTIVÉ";
+    text="🎯 KINITO MODE";
   }
 
-  // noisette
+  // 🌰 noisette
   if(d1v===3||d2v===3){
     if(!noisette){ noisette=true; text+="<br>🌰 noisette"; }
     else text+="<br>🌰 noisette boit";
   }
 
-  // règles custom
+  // 📜 règles custom
   if(rules[result]){
     text="🧠 "+rules[result];
     relance=true;
   }
 
-  // catin effet
-  if(catin) text+="<br>😈 catin boit";
-
-  // rien
+  // 😇 rien
   if(!text) text="👉 Donne les dés à quelqu’un";
 
-  // relance
+  // 🔁 relance
   if(relance) text+="<br>🔁 Tu peux relancer";
 
   rule.innerHTML=text;
 }
 
+// 🔒 lock kinito (5 ou 6)
 function toggleLock(i){
   if(!kinito) return;
   let v=diceValues[i];
@@ -251,13 +250,14 @@ function toggleLock(i){
   }
 }
 
+// sortie kinito
 function exitKinito(){
   kinito=false;
   tries=0;
   locked=[false,false];
 }
 
-// 📱 secouer (amélioré)
+// 📱 secouer
 let lastTime=0;
 window.addEventListener("devicemotion",e=>{
   let acc=e.accelerationIncludingGravity;
