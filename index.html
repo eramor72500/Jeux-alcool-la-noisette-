@@ -2,260 +2,275 @@
 <html lang="fr">
 <head>
 <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>🎲 Jeu Hardcore</title>
 
 <style>
 body {
+  margin: 0;
   font-family: Arial;
-  text-align: center;
-  background: #111;
   color: white;
-  padding: 30px;
+  text-align: center;
+  background: radial-gradient(circle, #5a3e2b, #2b1a10);
 }
 
-/* 🎲 dés */
+.container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100vh;
+}
+
+.dice-area {
+  perspective: 800px;
+}
+
 .dice {
-  width: 120px;
-  height: 120px;
+  width: 110px;
+  height: 110px;
   background: white;
   border-radius: 20px;
   display: inline-grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 8px;
   padding: 15px;
-  margin: 10px;
-  transition: transform 0.3s;
+  margin: 15px;
+  box-shadow: 0 10px 20px rgba(0,0,0,0.5);
 }
 
 .dot {
-  width: 18px;
-  height: 18px;
+  width: 16px;
+  height: 16px;
   background: black;
   border-radius: 50%;
   margin: auto;
 }
 
-.roll {
-  animation: roll 0.4s;
+.fall {
+  animation: fall 0.6s ease;
 }
 
-@keyframes roll {
-  0% { transform: rotate(0deg) scale(1); }
-  50% { transform: rotate(180deg) scale(1.2); }
-  100% { transform: rotate(360deg) scale(1); }
+@keyframes fall {
+  0% { transform: translateY(-200px) rotateX(0deg); opacity:0; }
+  100% { transform: translateY(0) rotateX(360deg); opacity:1; }
 }
 
 .locked {
-  box-shadow: 0 0 15px yellow;
+  box-shadow: 0 0 20px yellow;
 }
 
 .rule {
-  font-size: 22px;
-  margin-top: 20px;
-  min-height: 60px;
+  font-size: 28px;
+  margin: 20px;
+  max-width: 90%;
 }
 
 button {
-  padding: 12px 20px;
-  font-size: 16px;
-  border-radius: 10px;
+  padding: 14px 22px;
+  font-size: 18px;
+  border-radius: 12px;
   border: none;
   background: #ff4757;
   color: white;
-  margin-top: 10px;
+  margin: 5px;
+}
+
+@media (orientation: landscape) {
+  .container {
+    flex-direction: row;
+    gap: 40px;
+  }
 }
 </style>
 </head>
 
 <body>
 
-<h1>🎲 Jeu Hardcore</h1>
+<div class="container">
 
-<div id="diceContainer">
-  <div class="dice" id="d1" onclick="toggleLock(0)"></div>
-  <div class="dice" id="d2" onclick="toggleLock(1)"></div>
+  <div class="dice-area">
+    <div class="dice" id="d1" onclick="toggleLock(0)"></div>
+    <div class="dice" id="d2" onclick="toggleLock(1)"></div>
+  </div>
+
+  <div>
+    <div class="rule" id="rule">Appuie ou secoue</div>
+    <button onclick="rollDice()">Lancer</button>
+    <button onclick="exitKinito()">Sortir du Kinito</button>
+  </div>
+
 </div>
 
-<div class="rule" id="rule">Appuie ou secoue</div>
-
-<button onclick="rollDice()">Lancer</button>
-<button onclick="resetKinito()">Quitter Kinito</button>
-
 <script>
-let diceValues = [1,1];
-let locked = [false,false];
+let diceValues=[1,1];
+let locked=[false,false];
 
-let noisette = false;
-let kinito = false;
-let tries = 0;
+let noisette=false;
+let catin=false;
 
-let rules = JSON.parse(localStorage.getItem("rules") || "{}");
+let kinito=false;
+let tries=0;
 
-// 🎲 affichage graphique
-function drawDice(el, val) {
-  const patterns = {
-    1:[4],
-    2:[0,8],
-    3:[0,4,8],
-    4:[0,2,6,8],
-    5:[0,2,4,6,8],
-    6:[0,2,3,5,6,8]
-  };
+let rules=JSON.parse(localStorage.getItem("rules")||"{}");
 
-  el.innerHTML = "";
+function draw(el,val){
+  const p={1:[4],2:[0,8],3:[0,4,8],4:[0,2,6,8],5:[0,2,4,6,8],6:[0,2,3,5,6,8]};
+  el.innerHTML="";
   for(let i=0;i<9;i++){
-    let dot = document.createElement("div");
-    if(patterns[val].includes(i)) dot.className="dot";
-    el.appendChild(dot);
+    let d=document.createElement("div");
+    if(p[val].includes(i)) d.className="dot";
+    el.appendChild(d);
   }
 }
 
-// 🎲 update visuel
-function update() {
-  let d1 = document.getElementById("d1");
-  let d2 = document.getElementById("d2");
-
-  drawDice(d1, diceValues[0]);
-  drawDice(d2, diceValues[1]);
-
-  d1.classList.toggle("locked", locked[0]);
-  d2.classList.toggle("locked", locked[1]);
+function update(){
+  draw(d1,diceValues[0]);
+  draw(d2,diceValues[1]);
+  d1.classList.toggle("locked",locked[0]);
+  d2.classList.toggle("locked",locked[1]);
 }
 
-// 📳 vibration
-function vibrate() {
-  if (navigator.vibrate) navigator.vibrate(100);
+function vibrate(){
+  if(navigator.vibrate) navigator.vibrate(100);
 }
 
-// 🎲 lancer
-function rollDice() {
+function animate(){
+  d1.classList.add("fall");
+  d2.classList.add("fall");
+  setTimeout(()=>{
+    d1.classList.remove("fall");
+    d2.classList.remove("fall");
+  },600);
+}
+
+function rollDice(){
 
   vibrate();
+  animate();
 
-  document.getElementById("d1").classList.add("roll");
-  document.getElementById("d2").classList.add("roll");
-
-  setTimeout(()=>{
-    document.getElementById("d1").classList.remove("roll");
-    document.getElementById("d2").classList.remove("roll");
-  },400);
-
-  // 🎯 KINITO
-  if (kinito) {
+  // 🎯 KINITO MODE
+  if(kinito){
     tries++;
 
-    for (let i=0;i<2;i++){
-      if (!locked[i]) {
-        diceValues[i] = Math.floor(Math.random()*6)+1;
+    for(let i=0;i<2;i++){
+      if(!locked[i]){
+        diceValues[i]=Math.floor(Math.random()*6)+1;
       }
     }
 
     update();
 
-    document.getElementById("rule").textContent =
-      "🎯 Kinito " + tries + "/3";
+    rule.innerHTML="🎯 KINITO MODE<br>Essai "+tries+"/3";
 
-    if (tries>=3) {
-      kinito=false;
-      locked=[false,false];
-      document.getElementById("rule").textContent += " → FIN";
+    if(tries>=3){
+      exitKinito();
+      rule.innerHTML+="<br>Fin du Kinito";
     }
 
     return;
   }
 
-  // 🎲 normal
-  diceValues = [
-    Math.floor(Math.random()*6)+1,
-    Math.floor(Math.random()*6)+1
-  ];
-
+  // 🎲 NORMAL
+  diceValues=[Math.floor(Math.random()*6)+1,Math.floor(Math.random()*6)+1];
   update();
 
-  let d1 = diceValues[0];
-  let d2 = diceValues[1];
+  let d1v=diceValues[0], d2v=diceValues[1];
+  let result=""+d1v+d2v, reversed=""+d2v+d1v;
 
-  let result = ""+d1+d2;
-  let reversed = ""+d2+d1;
+  let text="", relance=false;
 
-  let text = "";
+  // CATIN
+  if(result==="41"||reversed==="41"){
+    catin=true;
+    text="😈 CATIN → tu bois à chaque lancer";
+    relance=true;
+  }
 
-  // 🔥 DOUBLE 6
-  if (d1===6 && d2===6) {
-    let r = prompt("Écris ta règle 😈");
-    if (r) {
+  // DOUBLE 6
+  else if(d1v===6&&d2v===6){
+    let r=prompt("Écris ta règle 😈");
+    if(r){
       rules["66"]=r;
-      localStorage.setItem("rules", JSON.stringify(rules));
-      text="🧠 Règle ajoutée !";
+      localStorage.setItem("rules",JSON.stringify(rules));
+      text="🧠 règle ajoutée";
     }
   }
 
-  // 🔥 DOUBLES
-  else if (d1===d2) {
-    if (d1===3) text="🔥 Double 3 → donne la noisette";
-    else text="🔥 Double "+d1+" → bois "+d1;
+  // DOUBLES
+  else if(d1v===d2v){
+    if(d1v===3) text="🔥 Double 3 → donne la noisette";
+    else{
+      text="🔥 Double "+d1v+" → bois "+d1v;
+      relance=true;
+    }
   }
 
-  // 🎯 règles
-  else if (result==="21") text="⬅️ joueur avant boit";
-  else if (result==="61") text="➡️ joueur après boit";
-  else if (result==="51") text="👃 dernier nez boit";
+  // règles
+  else if(result==="21"){ text="⬅️ avant boit"; relance=true; }
+  else if(result==="61"){ text="➡️ après boit"; relance=true; }
+  else if(result==="51"){ text="👃 dernier nez boit"; relance=true; }
 
-  else if (result==="65" || reversed==="65") {
+  else if(result==="65"||reversed==="65"){
     kinito=true;
     tries=0;
     locked=[false,false];
-    text="🎯 KINITO !";
+    text="🎯 KINITO MODE ACTIVÉ";
   }
 
-  // 🌰 noisette
-  if (d1===3 || d2===3) {
-    if (!noisette) {
-      noisette=true;
-      text+="<br>🌰 tu es la noisette";
-    } else {
-      text+="<br>🌰 noisette boit";
-    }
+  // noisette
+  if(d1v===3||d2v===3){
+    if(!noisette){ noisette=true; text+="<br>🌰 noisette"; }
+    else text+="<br>🌰 noisette boit";
   }
 
-  // 📜 règles custom
-  if (rules[result]) {
+  // règles custom
+  if(rules[result]){
     text="🧠 "+rules[result];
+    relance=true;
   }
 
-  document.getElementById("rule").innerHTML =
-    text || "Rien 😇";
+  // catin effet
+  if(catin) text+="<br>😈 catin boit";
+
+  // rien
+  if(!text) text="👉 Donne les dés à quelqu’un";
+
+  // relance
+  if(relance) text+="<br>🔁 Tu peux relancer";
+
+  rule.innerHTML=text;
 }
 
-// 🔒 lock kinito
-function toggleLock(i) {
-  if (!kinito) return;
-
-  let val = diceValues[i];
-
-  if (val===5 || val===6) {
+function toggleLock(i){
+  if(!kinito) return;
+  let v=diceValues[i];
+  if(v===5||v===6){
     locked[i]=!locked[i];
     update();
   }
 }
 
-// reset
-function resetKinito(){
+function exitKinito(){
   kinito=false;
   tries=0;
   locked=[false,false];
-  document.getElementById("rule").textContent="Kinito annulé";
 }
 
-// 📱 secouer
-let lastX=null;
-window.addEventListener("devicemotion", e=>{
-  let x=e.accelerationIncludingGravity.x;
-  if (lastX && Math.abs(x-lastX)>15) rollDice();
-  lastX=x;
+// 📱 secouer (amélioré)
+let lastTime=0;
+window.addEventListener("devicemotion",e=>{
+  let acc=e.accelerationIncludingGravity;
+  let force=Math.abs(acc.x)+Math.abs(acc.y)+Math.abs(acc.z);
+
+  let now=Date.now();
+
+  if(force>30 && now-lastTime>800){
+    rollDice();
+    lastTime=now;
+  }
 });
 
-// init
 update();
 </script>
 
