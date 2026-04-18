@@ -11,7 +11,7 @@ body {
   font-family: Arial;
   color: white;
   text-align: center;
-  background: radial-gradient(circle, #5a3e2b, #2b1a10);
+  background: radial-gradient(circle at center, #6b4a2f, #2b1a10);
 }
 
 .container {
@@ -22,13 +22,9 @@ body {
   height: 100vh;
 }
 
-.dice-area {
-  perspective: 800px;
-}
-
 .dice {
-  width: 110px;
-  height: 110px;
+  width: 120px;
+  height: 120px;
   background: white;
   border-radius: 20px;
   display: inline-grid;
@@ -36,7 +32,7 @@ body {
   gap: 8px;
   padding: 15px;
   margin: 15px;
-  box-shadow: 0 10px 25px rgba(0,0,0,0.6);
+  box-shadow: 0 15px 25px rgba(0,0,0,0.7);
 }
 
 .dot {
@@ -53,11 +49,13 @@ body {
 
 @keyframes fall {
   0% { transform: translateY(-200px) rotateX(0deg); opacity:0; }
+  50% { transform: translateY(40px) rotateX(180deg); }
   100% { transform: translateY(0) rotateX(360deg); opacity:1; }
 }
 
 .locked {
-  box-shadow: 0 0 20px yellow;
+  box-shadow: 0 0 25px yellow;
+  transform: scale(1.1);
 }
 
 .rule {
@@ -89,7 +87,7 @@ button {
 
 <div class="container">
 
-  <div class="dice-area">
+  <div>
     <div class="dice" id="d1" onclick="toggleLock(0)"></div>
     <div class="dice" id="d2" onclick="toggleLock(1)"></div>
   </div>
@@ -97,7 +95,7 @@ button {
   <div>
     <div class="rule" id="rule">Appuie ou secoue</div>
     <button onclick="rollDice()">Lancer</button>
-    <button onclick="exitKinito()">Sortir du Kinito</button>
+    <button onclick="freeRoll()">🎯 Dé libre</button>
   </div>
 
 </div>
@@ -106,15 +104,11 @@ button {
 let diceValues=[1,1];
 let locked=[false,false];
 
-let noisette=false;
-let catin=false;
-
 let kinito=false;
 let tries=0;
 
 let rules=JSON.parse(localStorage.getItem("rules")||"{}");
 
-// 🎲 affichage
 function draw(el,val){
   const p={1:[4],2:[0,8],3:[0,4,8],4:[0,2,6,8],5:[0,2,4,6,8],6:[0,2,3,5,6,8]};
   el.innerHTML="";
@@ -145,34 +139,12 @@ function animate(){
   },600);
 }
 
+// 🎲 lancer normal
 function rollDice(){
 
   vibrate();
   animate();
 
-  // 🎯 KINITO
-  if(kinito){
-    tries++;
-
-    for(let i=0;i<2;i++){
-      if(!locked[i]){
-        diceValues[i]=Math.floor(Math.random()*6)+1;
-      }
-    }
-
-    update();
-
-    rule.innerHTML="🎯 KINITO MODE<br>Essai "+tries+"/3";
-
-    if(tries>=3){
-      exitKinito();
-      rule.innerHTML+="<br>Fin du Kinito";
-    }
-
-    return;
-  }
-
-  // 🎲 NORMAL
   diceValues=[Math.floor(Math.random()*6)+1,Math.floor(Math.random()*6)+1];
   update();
 
@@ -181,10 +153,9 @@ function rollDice(){
 
   let text="", relance=false;
 
-  // 😈 CATIN (corrigé)
+  // 😈 CATIN
   if(result==="41"||reversed==="41"){
-    catin=true;
-    text="😈 CATIN → tu bois maintenant + tu peux relancer";
+    text="😈 CATIN → tu bois + relance";
     relance=true;
   }
 
@@ -200,11 +171,8 @@ function rollDice(){
 
   // 🔥 DOUBLES
   else if(d1v===d2v){
-    if(d1v===3) text="🔥 Double 3 → donne la noisette";
-    else{
-      text="🔥 Double "+d1v+" → bois "+d1v;
-      relance=true;
-    }
+    text="🔥 Double "+d1v+" → bois "+d1v;
+    relance=true;
   }
 
   // 🎯 règles
@@ -216,13 +184,7 @@ function rollDice(){
     kinito=true;
     tries=0;
     locked=[false,false];
-    text="🎯 KINITO MODE";
-  }
-
-  // 🌰 noisette
-  if(d1v===3||d2v===3){
-    if(!noisette){ noisette=true; text+="<br>🌰 noisette"; }
-    else text+="<br>🌰 noisette boit";
+    text="🎯 KINITO MODE → 3 essais pour faire 65";
   }
 
   // 📜 règles custom
@@ -231,30 +193,62 @@ function rollDice(){
     relance=true;
   }
 
-  // 😇 rien
-  if(!text) text="👉 Donne les dés à quelqu’un";
+  if(!text) text="👉 Donne les dés";
 
-  // 🔁 relance
   if(relance) text+="<br>🔁 Tu peux relancer";
 
   rule.innerHTML=text;
 }
 
-// 🔒 lock kinito (5 ou 6)
-function toggleLock(i){
-  if(!kinito) return;
-  let v=diceValues[i];
-  if(v===5||v===6){
-    locked[i]=!locked[i];
-    update();
+// 🎯 lancer kinito
+function freeRoll(){
+
+  if(!kinito){
+    rule.textContent="Fais 65 pour activer le Kinito";
+    return;
+  }
+
+  vibrate();
+  animate();
+
+  tries++;
+
+  for(let i=0;i<2;i++){
+    if(!locked[i]){
+      diceValues[i]=Math.floor(Math.random()*6)+1;
+    }
+  }
+
+  update();
+
+  let result=""+diceValues[0]+diceValues[1];
+
+  rule.innerHTML="🎯 Kinito "+tries+"/3";
+
+  if(result==="65"||result==="56"){
+    rule.innerHTML+="<br>🔥 RÉUSSI !";
+    kinito=false;
+    locked=[false,false];
+    return;
+  }
+
+  if(tries>=3){
+    rule.innerHTML+="<br>❌ Perdu";
+    kinito=false;
+    locked=[false,false];
   }
 }
 
-// sortie kinito
-function exitKinito(){
-  kinito=false;
-  tries=0;
-  locked=[false,false];
+// 🔒 verrouillage UNIQUEMENT kinito + 5 ou 6
+function toggleLock(i){
+  if(!kinito) return;
+
+  let value = diceValues[i];
+
+  if(value===5 || value===6){
+    locked[i]=!locked[i];
+    update();
+  }
 }
 
 // 📱 secouer
