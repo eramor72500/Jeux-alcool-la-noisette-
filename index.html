@@ -1,132 +1,262 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-  <meta charset="UTF-8">
-  <title>Jeu d'alcool 🎲</title>
-  <style>
-    body {
-      font-family: Arial;
-      text-align: center;
-      background: #111;
-      color: white;
-      padding: 40px;
-    }
-    .dice {
-      font-size: 80px;
-    }
-    .container {
-      display: flex;
-      justify-content: center;
-      gap: 30px;
-      margin: 20px;
-    }
-    .rule {
-      font-size: 22px;
-      margin-top: 20px;
-      min-height: 60px;
-    }
-    button {
-      padding: 15px 30px;
-      font-size: 18px;
-      border: none;
-      border-radius: 10px;
-      background: #ff4757;
-      color: white;
-    }
-    .status {
-      margin-top: 20px;
-      font-size: 18px;
-      color: #aaa;
-    }
-  </style>
+<meta charset="UTF-8">
+<title>🎲 Jeu Hardcore</title>
+
+<style>
+body {
+  font-family: Arial;
+  text-align: center;
+  background: #111;
+  color: white;
+  padding: 30px;
+}
+
+/* 🎲 dés */
+.dice {
+  width: 120px;
+  height: 120px;
+  background: white;
+  border-radius: 20px;
+  display: inline-grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  padding: 15px;
+  margin: 10px;
+  transition: transform 0.3s;
+}
+
+.dot {
+  width: 18px;
+  height: 18px;
+  background: black;
+  border-radius: 50%;
+  margin: auto;
+}
+
+.roll {
+  animation: roll 0.4s;
+}
+
+@keyframes roll {
+  0% { transform: rotate(0deg) scale(1); }
+  50% { transform: rotate(180deg) scale(1.2); }
+  100% { transform: rotate(360deg) scale(1); }
+}
+
+.locked {
+  box-shadow: 0 0 15px yellow;
+}
+
+.rule {
+  font-size: 22px;
+  margin-top: 20px;
+  min-height: 60px;
+}
+
+button {
+  padding: 12px 20px;
+  font-size: 16px;
+  border-radius: 10px;
+  border: none;
+  background: #ff4757;
+  color: white;
+  margin-top: 10px;
+}
+</style>
 </head>
+
 <body>
 
-<h1>🎲 Jeu d'alcool</h1>
+<h1>🎲 Jeu Hardcore</h1>
 
-<div class="container">
-  <div class="dice" id="d1">🎲</div>
-  <div class="dice" id="d2">🎲</div>
+<div id="diceContainer">
+  <div class="dice" id="d1" onclick="toggleLock(0)"></div>
+  <div class="dice" id="d2" onclick="toggleLock(1)"></div>
 </div>
 
 <div class="rule" id="rule">Appuie ou secoue</div>
-<div class="status" id="status"></div>
 
 <button onclick="rollDice()">Lancer</button>
+<button onclick="resetKinito()">Quitter Kinito</button>
 
 <script>
-let noisette = null;
-let kinitoMaster = null;
-let lastRoll = null;
+let diceValues = [1,1];
+let locked = [false,false];
 
+let noisette = false;
+let kinito = false;
+let tries = 0;
+
+let rules = JSON.parse(localStorage.getItem("rules") || "{}");
+
+// 🎲 affichage graphique
+function drawDice(el, val) {
+  const patterns = {
+    1:[4],
+    2:[0,8],
+    3:[0,4,8],
+    4:[0,2,6,8],
+    5:[0,2,4,6,8],
+    6:[0,2,3,5,6,8]
+  };
+
+  el.innerHTML = "";
+  for(let i=0;i<9;i++){
+    let dot = document.createElement("div");
+    if(patterns[val].includes(i)) dot.className="dot";
+    el.appendChild(dot);
+  }
+}
+
+// 🎲 update visuel
+function update() {
+  let d1 = document.getElementById("d1");
+  let d2 = document.getElementById("d2");
+
+  drawDice(d1, diceValues[0]);
+  drawDice(d2, diceValues[1]);
+
+  d1.classList.toggle("locked", locked[0]);
+  d2.classList.toggle("locked", locked[1]);
+}
+
+// 📳 vibration
+function vibrate() {
+  if (navigator.vibrate) navigator.vibrate(100);
+}
+
+// 🎲 lancer
 function rollDice() {
-  let d1 = Math.floor(Math.random() * 6) + 1;
-  let d2 = Math.floor(Math.random() * 6) + 1;
 
-  document.getElementById("d1").textContent = d1;
-  document.getElementById("d2").textContent = d2;
+  vibrate();
 
-  let result = d1 + "" + d2;
-  let reversed = d2 + "" + d1;
+  document.getElementById("d1").classList.add("roll");
+  document.getElementById("d2").classList.add("roll");
+
+  setTimeout(()=>{
+    document.getElementById("d1").classList.remove("roll");
+    document.getElementById("d2").classList.remove("roll");
+  },400);
+
+  // 🎯 KINITO
+  if (kinito) {
+    tries++;
+
+    for (let i=0;i<2;i++){
+      if (!locked[i]) {
+        diceValues[i] = Math.floor(Math.random()*6)+1;
+      }
+    }
+
+    update();
+
+    document.getElementById("rule").textContent =
+      "🎯 Kinito " + tries + "/3";
+
+    if (tries>=3) {
+      kinito=false;
+      locked=[false,false];
+      document.getElementById("rule").textContent += " → FIN";
+    }
+
+    return;
+  }
+
+  // 🎲 normal
+  diceValues = [
+    Math.floor(Math.random()*6)+1,
+    Math.floor(Math.random()*6)+1
+  ];
+
+  update();
+
+  let d1 = diceValues[0];
+  let d2 = diceValues[1];
+
+  let result = ""+d1+d2;
+  let reversed = ""+d2+d1;
 
   let text = "";
 
+  // 🔥 DOUBLE 6
+  if (d1===6 && d2===6) {
+    let r = prompt("Écris ta règle 😈");
+    if (r) {
+      rules["66"]=r;
+      localStorage.setItem("rules", JSON.stringify(rules));
+      text="🧠 Règle ajoutée !";
+    }
+  }
+
   // 🔥 DOUBLES
-  if (d1 === d2) {
-    if (d1 === 6) {
-      text = "🔥 Double 6 → 6 gorgées + crée une règle";
-    } else if (d1 === 3) {
-      text = "🔥 Double 3 → Donne la noisette à quelqu’un";
-    } else {
-      text = "🔥 Double " + d1 + " → Bois " + d1 + " gorgée(s)";
-    }
+  else if (d1===d2) {
+    if (d1===3) text="🔥 Double 3 → donne la noisette";
+    else text="🔥 Double "+d1+" → bois "+d1;
   }
 
-  // 🎯 RÈGLES SPÉCIALES
-  else if (result === "21") {
-    text = "⬅️ 21 → La personne d’avant boit";
-  }
-  else if (result === "61") {
-    text = "➡️ 61 → La personne d’après boit";
-  }
-  else if (result === "51") {
-    text = "👃 51 → Pastis : dernier doigt sur le nez boit";
-  }
-  else if (result === "65" || reversed === "65") {
-    kinitoMaster = true;
-    text = "🎯 65 → Kinito ! Choisis une cible (3 essais pour faire 65)";
+  // 🎯 règles
+  else if (result==="21") text="⬅️ joueur avant boit";
+  else if (result==="61") text="➡️ joueur après boit";
+  else if (result==="51") text="👃 dernier nez boit";
+
+  else if (result==="65" || reversed==="65") {
+    kinito=true;
+    tries=0;
+    locked=[false,false];
+    text="🎯 KINITO !";
   }
 
-  // 🌰 NOISETTE
-  if (d1 === 3 || d2 === 3) {
+  // 🌰 noisette
+  if (d1===3 || d2===3) {
     if (!noisette) {
-      noisette = true;
-      text += "<br>🌰 Tu deviens la NOISETTE";
+      noisette=true;
+      text+="<br>🌰 tu es la noisette";
     } else {
-      text += "<br>🌰 La noisette boit 1 gorgée";
+      text+="<br>🌰 noisette boit";
     }
   }
 
-  document.getElementById("rule").innerHTML = text || "Rien de spécial 😇";
+  // 📜 règles custom
+  if (rules[result]) {
+    text="🧠 "+rules[result];
+  }
 
-  document.getElementById("status").textContent =
-    "Noisette: " + (noisette ? "active" : "aucune");
-
-  lastRoll = result;
+  document.getElementById("rule").innerHTML =
+    text || "Rien 😇";
 }
 
-// 📱 Secouer
-let lastX = null;
+// 🔒 lock kinito
+function toggleLock(i) {
+  if (!kinito) return;
 
-window.addEventListener("devicemotion", function(event) {
-  let x = event.accelerationIncludingGravity.x;
+  let val = diceValues[i];
 
-  if (lastX !== null && Math.abs(x - lastX) > 15) {
-    rollDice();
+  if (val===5 || val===6) {
+    locked[i]=!locked[i];
+    update();
   }
+}
 
-  lastX = x;
+// reset
+function resetKinito(){
+  kinito=false;
+  tries=0;
+  locked=[false,false];
+  document.getElementById("rule").textContent="Kinito annulé";
+}
+
+// 📱 secouer
+let lastX=null;
+window.addEventListener("devicemotion", e=>{
+  let x=e.accelerationIncludingGravity.x;
+  if (lastX && Math.abs(x-lastX)>15) rollDice();
+  lastX=x;
 });
+
+// init
+update();
 </script>
 
 </body>
