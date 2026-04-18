@@ -7,78 +7,67 @@
 
 <style>
 body {
-  margin: 0;
+  margin:0;
   font-family: Arial;
-  color: white;
-  text-align: center;
-  background: radial-gradient(circle at center, #6b4a2f, #2b1a10);
+  color:white;
+  text-align:center;
+  background: radial-gradient(circle,#6b4a2f,#2b1a10);
 }
 
 .container {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  height: 100vh;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  height:100vh;
 }
 
 .dice {
-  width: 120px;
-  height: 120px;
-  background: white;
-  border-radius: 20px;
-  display: inline-grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 8px;
-  padding: 15px;
-  margin: 15px;
-  box-shadow: 0 15px 25px rgba(0,0,0,0.7);
+  width:120px;
+  height:120px;
+  background:white;
+  border-radius:20px;
+  display:inline-grid;
+  grid-template-columns:repeat(3,1fr);
+  gap:8px;
+  padding:15px;
+  margin:15px;
+  box-shadow:0 15px 25px rgba(0,0,0,0.7);
 }
 
 .dot {
-  width: 16px;
-  height: 16px;
-  background: black;
-  border-radius: 50%;
-  margin: auto;
+  width:16px;
+  height:16px;
+  background:black;
+  border-radius:50%;
+  margin:auto;
 }
 
-.fall {
-  animation: fall 0.6s ease;
-}
+.fall { animation:fall 0.6s ease; }
 
 @keyframes fall {
-  0% { transform: translateY(-200px) rotateX(0deg); opacity:0; }
-  50% { transform: translateY(40px) rotateX(180deg); }
-  100% { transform: translateY(0) rotateX(360deg); opacity:1; }
+  0%{transform:translateY(-200px) rotateX(0);opacity:0;}
+  100%{transform:translateY(0) rotateX(360deg);opacity:1;}
 }
 
 .locked {
-  box-shadow: 0 0 25px yellow;
-  transform: scale(1.1);
+  box-shadow:0 0 25px yellow;
+  transform:scale(1.1);
 }
 
 .rule {
-  font-size: 28px;
-  margin: 20px;
-  max-width: 90%;
+  font-size:28px;
+  margin:20px;
 }
 
 button {
-  padding: 14px 22px;
-  font-size: 18px;
-  border-radius: 12px;
-  border: none;
-  background: #ff4757;
-  color: white;
-  margin: 5px;
-}
-
-@media (orientation: landscape) {
-  .container {
-    flex-direction: row;
-    gap: 40px;
-  }
+  padding:14px 22px;
+  font-size:18px;
+  border-radius:12px;
+  border:none;
+  background:#ff4757;
+  color:white;
+  margin:5px;
 }
 </style>
 </head>
@@ -88,8 +77,8 @@ button {
 <div class="container">
 
   <div>
-    <div class="dice" id="d1" onclick="toggleLock(0)"></div>
-    <div class="dice" id="d2" onclick="toggleLock(1)"></div>
+    <div class="dice" id="d1"></div>
+    <div class="dice" id="d2"></div>
   </div>
 
   <div>
@@ -109,6 +98,7 @@ let tries=0;
 
 let rules=JSON.parse(localStorage.getItem("rules")||"{}");
 
+// 🎲 affichage
 function draw(el,val){
   const p={1:[4],2:[0,8],3:[0,4,8],4:[0,2,6,8],5:[0,2,4,6,8],6:[0,2,3,5,6,8]};
   el.innerHTML="";
@@ -159,13 +149,16 @@ function rollDice(){
     relance=true;
   }
 
-  // 🔥 DOUBLE 6
-  else if(d1v===6&&d2v===6){
-    let r=prompt("Écris ta règle 😈");
-    if(r){
-      rules["66"]=r;
+  // 🔥 DOUBLE 6 → CREATION REGLE
+  else if(d1v===6 && d2v===6){
+
+    let combo = prompt("Sur quel résultat ? (ex: 12)");
+    let ruleText = prompt("Écris la règle 😈");
+
+    if(combo && ruleText){
+      rules[combo]=ruleText;
       localStorage.setItem("rules",JSON.stringify(rules));
-      text="🧠 règle ajoutée";
+      text="🧠 règle ajoutée sur "+combo;
     }
   }
 
@@ -176,15 +169,15 @@ function rollDice(){
   }
 
   // 🎯 règles
-  else if(result==="21"){ text="⬅️ joueur avant boit"; relance=true; }
-  else if(result==="61"){ text="➡️ joueur après boit"; relance=true; }
+  else if(result==="21"){ text="⬅️ avant boit"; relance=true; }
+  else if(result==="61"){ text="➡️ après boit"; relance=true; }
   else if(result==="51"){ text="👃 dernier nez boit"; relance=true; }
 
   else if(result==="65"||reversed==="65"){
     kinito=true;
     tries=0;
     locked=[false,false];
-    text="🎯 KINITO MODE → 3 essais pour faire 65";
+    text="🎯 KINITO → utilise Dé libre";
   }
 
   // 📜 règles custom
@@ -200,7 +193,7 @@ function rollDice(){
   rule.innerHTML=text;
 }
 
-// 🎯 lancer kinito
+// 🎯 MODE KINITO (dé libre)
 function freeRoll(){
 
   if(!kinito){
@@ -214,8 +207,15 @@ function freeRoll(){
   tries++;
 
   for(let i=0;i<2;i++){
-    if(!locked[i]){
-      diceValues[i]=Math.floor(Math.random()*6)+1;
+
+    if(locked[i]) continue;
+
+    let val=Math.floor(Math.random()*6)+1;
+    diceValues[i]=val;
+
+    // 🔒 AUTO LOCK 5 ou 6
+    if(val===5 || val===6){
+      locked[i]=true;
     }
   }
 
@@ -226,7 +226,7 @@ function freeRoll(){
   rule.innerHTML="🎯 Kinito "+tries+"/3";
 
   if(result==="65"||result==="56"){
-    rule.innerHTML+="<br>🔥 RÉUSSI !";
+    rule.innerHTML+="<br>🔥 RÉUSSI";
     kinito=false;
     locked=[false,false];
     return;
@@ -236,18 +236,6 @@ function freeRoll(){
     rule.innerHTML+="<br>❌ Perdu";
     kinito=false;
     locked=[false,false];
-  }
-}
-
-// 🔒 verrouillage UNIQUEMENT kinito + 5 ou 6
-function toggleLock(i){
-  if(!kinito) return;
-
-  let value = diceValues[i];
-
-  if(value===5 || value===6){
-    locked[i]=!locked[i];
-    update();
   }
 }
 
