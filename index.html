@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <title>Jeu d'alcool 🎲</title>
+  <style>
+    body {
+      font-family: Arial;
+      text-align: center;
+      background: #111;
+      color: white;
+      padding: 40px;
+    }
+    .dice {
+      font-size: 80px;
+    }
+    .container {
+      display: flex;
+      justify-content: center;
+      gap: 30px;
+      margin: 20px;
+    }
+    .rule {
+      font-size: 22px;
+      margin-top: 20px;
+      min-height: 60px;
+    }
+    button {
+      padding: 15px 30px;
+      font-size: 18px;
+      border: none;
+      border-radius: 10px;
+      background: #ff4757;
+      color: white;
+    }
+    .status {
+      margin-top: 20px;
+      font-size: 18px;
+      color: #aaa;
+    }
+  </style>
+</head>
+<body>
+
+<h1>🎲 Jeu d'alcool</h1>
+
+<div class="container">
+  <div class="dice" id="d1">🎲</div>
+  <div class="dice" id="d2">🎲</div>
+</div>
+
+<div class="rule" id="rule">Appuie ou secoue</div>
+<div class="status" id="status"></div>
+
+<button onclick="rollDice()">Lancer</button>
+
+<script>
+let noisette = null;
+let kinitoMaster = null;
+let lastRoll = null;
+
+function rollDice() {
+  let d1 = Math.floor(Math.random() * 6) + 1;
+  let d2 = Math.floor(Math.random() * 6) + 1;
+
+  document.getElementById("d1").textContent = d1;
+  document.getElementById("d2").textContent = d2;
+
+  let result = d1 + "" + d2;
+  let reversed = d2 + "" + d1;
+
+  let text = "";
+
+  // 🔥 DOUBLES
+  if (d1 === d2) {
+    if (d1 === 6) {
+      text = "🔥 Double 6 → 6 gorgées + crée une règle";
+    } else if (d1 === 3) {
+      text = "🔥 Double 3 → Donne la noisette à quelqu’un";
+    } else {
+      text = "🔥 Double " + d1 + " → Bois " + d1 + " gorgée(s)";
+    }
+  }
+
+  // 🎯 RÈGLES SPÉCIALES
+  else if (result === "21") {
+    text = "⬅️ 21 → La personne d’avant boit";
+  }
+  else if (result === "61") {
+    text = "➡️ 61 → La personne d’après boit";
+  }
+  else if (result === "51") {
+    text = "👃 51 → Pastis : dernier doigt sur le nez boit";
+  }
+  else if (result === "65" || reversed === "65") {
+    kinitoMaster = true;
+    text = "🎯 65 → Kinito ! Choisis une cible (3 essais pour faire 65)";
+  }
+
+  // 🌰 NOISETTE
+  if (d1 === 3 || d2 === 3) {
+    if (!noisette) {
+      noisette = true;
+      text += "<br>🌰 Tu deviens la NOISETTE";
+    } else {
+      text += "<br>🌰 La noisette boit 1 gorgée";
+    }
+  }
+
+  document.getElementById("rule").innerHTML = text || "Rien de spécial 😇";
+
+  document.getElementById("status").textContent =
+    "Noisette: " + (noisette ? "active" : "aucune");
+
+  lastRoll = result;
+}
+
+// 📱 Secouer
+let lastX = null;
+
+window.addEventListener("devicemotion", function(event) {
+  let x = event.accelerationIncludingGravity.x;
+
+  if (lastX !== null && Math.abs(x - lastX) > 15) {
+    rollDice();
+  }
+
+  lastX = x;
+});
+</script>
+
+</body>
+</html>
